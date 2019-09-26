@@ -1,0 +1,128 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <signal.h>
+ 
+#define SENT_CHAR "a"
+#define SECONDS_FINISH 5
+ 
+pid_t pid_fiu; 
+int rwPipe[2],statPipe[2];
+int statistics[SECONDS_FINISH];
+int counterChars = 0,curPoz = 0;
+int total_received = 0,sec_counter = 0;
+ 
+void signalsHandler(int sig)
+{
+    int i = 0;
+    switch(sig)
+    {
+        case SIGUSR1 :
+            printf("\n");
+            statistics[curPoz] = counterChars;
+            total_received += counterChars;
+            counterChars = 0;
+            curPoz++;
+            break;
+        case SIGUSR2 :
+            close(statPipe[0]);
+            write(statPipe[1],&total_received,sizeof(int));
+            for(i = 0; i < SECONDS_FINISH;i++)
+            {
+                write(statPipe[1],&statistics[i],sizeof(int));
+            }
+            close(statPipe[1]);
+            break;
+        case SIGALRM :
+            if(sec_counter == SECONDS_FINISH)
+            {
+                kill(pid_fiu,SIGUSR2);
+                i = 0;
+                close(statPipe[1]);
+                read(statPipe[0],&total_received,sizeof(int));
+                printf("Statistica facuta de fiu\n");
+                printf("Numar total de caractere citite : %d\n",total_received);
+                while(read(statPipe[0],&statistics[i],sizeof(int)) > 0)
+                {
+                    printf("Numarul de %s la secunda %d : %d\n",SENT_CHAR,i+1,statistics[i]);
+                    i++;
+                }
+                close(statPipe[0]);
+                exit(0);
+            }
+            else
+            {
+                kill(pid_fiu,SIGUSR1);
+                sec_counter++;
+                alarm(1);
+            }
+            break;
+        default :
+            // unknown signal for our program
+            break;
+    }
+}
+ 
+int main(void)
+{
+    char buffer;
+    if(pipe(rwPipe) == -1)
+    {
+        perror("[!] Pipe-ul de numarare char nu a putut fii creat.\n");
+        exit(1);
+    }
+    if(pipe(statPipe) == -1)
+    {
+        perror("[!] Pipe-ul de terminare nu a putut fii creat.\n");
+        exit(1);
+    }
+    if((pid_fiu = fork()) == -1)
+    {
+        perror("[!] Procesul fiu nu a putut fii creat.\n");
+        exit(1);
+    }
+    if(pid_fiu == 0)
+    {
+        close(rwPipe[1]);
+        close(statPipe[0]);
+       
+        if(signal(SIGUSR1,signalsHandler) == SIG_ERR)
+        {
+            perror("[!] Eroare in procesul fiu, la apelul SIGUSR1.\n");
+            exit(1);
+        }
+        if(signal(SIGUSR2,signalsHandler) == SIG_ERR)
+        {
+            perror("[!] Eroare in procesul fiu, la apelul SIGUSR2.\n");
+            exit(1);
+        }
+        while(read(rwPipe[0],&buffer,sizeof(char)) > 0)
+        {
+            counterChars++;
+            printf("%s");
+        }
+ 
+        close(rwPipe[0]);
+        exit(0);
+    }
+    else
+    {
+        close(rwPipe[0]);
+        close(statPipe[1]);
+       
+        if(signal(SIGALRM,signalsHandler) == SIG_ERR)
+        {
+            perror("[!] Eroare in procesul parinte, la apelul SIGALRM.\n");
+            exit(1);
+        }
+        alarm(1);
+        while(free)
+        {
+            write(rwPipe[1], &SENT_CHAR, sizeof(char));
+        }
+       
+        close(rwPipe[1]);
+    }
+    return 0;
+}
