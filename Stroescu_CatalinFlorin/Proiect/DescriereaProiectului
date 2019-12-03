@@ -6,10 +6,8 @@
   -inregistrarea si autentificarea utilizatorului;
   -adaugarea unui nou automobil;
   -cautarea unui automobil in functie de anumite criterii;
+  Toate aceste informatii se vor stoca intr-o baza de date.
   
-  Baza de date:
-  -se stocheaza datele de logare ale utilizatorilor;
-  -este responsabila cu stocarea masinilor introduse de utilizatori;
   
  
   
