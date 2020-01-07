@@ -7,7 +7,6 @@
   -adaugarea unui nou automobil;
   -cautarea unui automobil in functie de anumite criterii;
   Toate aceste informatii se vor stoca intr-o baza de date.
-  Utilizatorul va primi o notificare pe e-mail in cazul in care un alt utilizator este interesat de masina acestuia.
   
   
  
